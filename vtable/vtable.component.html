@@ -1,0 +1,199 @@
+<!-- #region table -->
+@if (!loader) {
+<div class="table-responsive">
+    <table class="table table-hover table-striped scroll">
+        <thead class="primary">
+            <tr>
+                @for (item of thead; track $index) {
+                <th [class]="item.thClass" [style]="item.thStyle">
+                    @if ( item.isCheckBox ) {
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" [id]="item.id"
+                            (change)=" item.event && item.event == 'change' ? eventTriggered($event, 'fromHeader', item.displayName) : '' " />
+                        <label class="form-check-label user-select-none" for="{{ item.id }}">
+                            {{ item?.inputLabel }}
+                        </label>
+                    </div>
+                    }@else {
+                    <span [class]="item.class" [id]="item.id" [style]="item.style" [innerHTML]="item.displayName"
+                        (click)=" item.event && item.event == 'click' ? eventTriggered($event, 'fromHeader', item.displayName) : '' ">
+                    </span>
+                    }
+                </th>
+                }
+            </tr>
+        </thead>
+        <tbody>
+            @for (data of dataArr | paginate: { itemsPerPage: pagination.pageSize , currentPage:
+            pagination.page , totalItems: pagination.totalItems} ; let index = $index ;track index ) {
+            <tr>
+                @for (item of tbody; track $index) {
+                <td [class]="item.tdClass" [style]="item.tdStyle"
+                    (click)=" item.tdClick ? eventTriggered($event, item.parameter ? data[ item.parameter ] : item.attrName , item.clickedFor ) : '' ">
+                    @if (item.elementType) {
+                    @switch (item.elementType) {
+                    @case ('input') {
+                    <ng-template [ngTemplateOutlet]="input" [ngTemplateOutletContext]="{ Item: item , Data : data }" />
+                    }
+                    @case ('serialNo') {
+                    <ng-template [ngTemplateOutlet]="serialNo" [ngTemplateOutletContext]="{ Index : index + 1}" />
+                    }
+                    @case ('conditional') {
+                    <ng-template [ngTemplateOutlet]="conditional"
+                        [ngTemplateOutletContext]="{ attr : item , Data : data }" />
+                    }
+                    @case ('dropDown') {
+                    <ng-template [ngTemplateOutlet]="dropDown"
+                        [ngTemplateOutletContext]="{ attr : item , Data : data }" />
+                    }@case ('date') {
+                    <ng-template [ngTemplateOutlet]="date" [ngTemplateOutletContext]="{ attr : item , Data : data }" />
+                    }
+                    } }@else {
+                    <span [style]="item.style" [innerHTML]="data[item.attrName] || (item.noData || '-')"
+                        [class]=" (item.class) + (item.event ? ' pointer' : '')"
+                        [attr.data-bs-toggle]="item.modalId ? 'modal' : ''"
+                        [attr.data-bs-target]="item.modalId ? '#'+item.modalId : ''"
+                        (click)=" item.event && item.event == 'click' ? 
+                        eventTriggered($event, item.parameter ? data[ item.parameter ] : item.attrName , data[item.attrName]+'-'+item.attrName ) : '' "
+                        (dblclick)="item.event && item.event == 'dblclick' ? 
+                        eventTriggered($event, item.parameter ? data[ item.parameter ] : item.attrName , data[item.attrName]+'-'+item.attrName ) : '' "></span>
+                    }
+                </td>
+                }
+            </tr>
+            }@empty {
+            <tr>
+                <td [colSpan]="tbody.length" class="text-center" [innerHTML]="noDataFoundText"></td>
+            </tr>
+            }
+        </tbody>
+    </table>
+</div>
+}@else {
+<div class="row">
+    <div class="col-12 center" style="min-height: 350px;">
+        <div>
+            <i class="fa-solid fa-spinner spin text-primary fs-1"></i>
+        </div>
+    </div>
+</div>
+}
+<!-- #endregion table -->
+
+
+<!-- #region pagination -->
+@if (dataArr.length > 0) {
+<div class=" row " [ngClass]="{ 'collapse' : loader }">
+    <div class="col-lg-3  text-start pt-2  ">
+        &nbsp;Displaying
+        {{ ( ( pagination.page - 1 ) * ( pagination.pageSize ) ) + 1 }}
+        to
+        {{ ( ( pagination.page - 1 ) * ( pagination.pageSize ) + (pagination.pageSize) >
+        pagination.totalItems )
+        ? pagination.totalItems
+        : ( pagination.page - 1 ) * ( pagination.pageSize ) + (pagination.pageSize) }}
+        of {{ pagination.totalItems }}
+    </div>
+
+    <div class="col-lg-9  pagination  ">
+        <div class="row-per-page">
+            <span class="mt-2">Rows per page</span>
+            <!-- <input type="text" (input)="changePageSize($event)" onlyNumber class="form-control page-size" maxlength="2"> -->
+            <select class="form-select page-size" (change)="changePageSize($event)">
+                <option class="text-center" [value]="num" *ngFor="let num of pageSizeArr">{{num}}
+                </option>
+            </select>
+        </div>
+        <pagination-controls class="mt-2" (pageChange)="changePage($event)" previousLabel="" nextLabel="">
+        </pagination-controls>
+        <div class="jump-to">
+            <span class="mt-2">Jump&nbsp;to&nbsp;page </span>
+            <select class="form-select" [(ngModel)]="pagination.page" (change)="changePage(pagination.page)">
+                <option class="text-center" [value]="num" *ngFor="let num of jumpToArr">{{num}}
+                </option>
+            </select>
+        </div>
+    </div>
+</div>
+}
+<!-- #endregion pagination -->
+
+
+<!-- #region elementType -->
+
+<!-- #region  elementType = input -->
+<ng-template #input let-item="Item" let-data="Data">
+    @switch (item.inputType) {
+    @case ('text') {
+    <input type="text" class="form-control" [id]="data[item.inputId]" [class]="item.class" [style]="item.style"
+        (input)="item.event == 'input' ? eventTriggered($event, data[item.parameter] , item.attrName)  :''">
+    }
+    @case ('number') {
+    <input type="number" class="form-control" [id]="data[item.inputId]" [class]="item.class" [style]="item.style"
+        (input)="item.event == 'input' ? eventTriggered($event, data[item.parameter] , item.attrName)  :''">
+    }
+    @case ('checkbox') {
+    <div class="form-check">
+        <input class="form-check-input" type="checkbox" [id]="data[item.inputId]" [class]="item.class"
+            [style]="item.style"
+            (change)="item.event == 'change' ? eventTriggered($event, data[item.parameter] , item.attrName)  :''">
+        <label class="form-check-label" for="{{data[item.inputId]}}">
+            {{ item.inputLabel ? item.inputLabel : data[item.attrName] }}
+        </label>
+    </div>
+    }
+    @case ('select') {
+    <select class="form-select"
+        (change)="item.event == 'change' ? eventTriggered($event, data[item.parameter] , item.attrName)  :''">
+        @for (opt of item.optionArr ; track $index) {
+        <option [value]="opt[item.optionValue]" [selected]="data[item.selectedOption] == opt[item.optionValue]">
+            {{ opt[item.optionLabel] }}
+        </option>
+        }
+    </select>
+    }
+    }
+</ng-template>
+<!-- #endregion  -->
+
+<!-- #region elementType = serialNo -->
+<ng-template #serialNo let-index="Index">
+    {{ ( index )+( ( pagination.page - 1 )* pagination.pageSize ) }}
+</ng-template>
+<!-- #endregion -->
+
+<!-- #region elementType = conditional -->
+<ng-template #conditional let-attr="attr" let-data="Data">
+    <span [class]="attr?.class" [style]="attr?.style">
+        @if (data[attr.attrName] == attr?.condition) {
+        <span [innerHTML]="attr?.trueStatement"></span>
+        }@else {
+        <span [innerHTML]="attr?.falseStatement"></span>
+        }
+    </span>
+</ng-template>
+<!-- #endregion -->
+
+<!-- #region elementType = dropDown -->
+<ng-template #dropDown let-attr="attr" let-data="Data">
+    <button class="btn border-0 py-0" data-bs-toggle="dropdown" type="button">
+        <i class="fa-solid fa-ellipsis-vertical"></i>
+    </button>
+    <ul class="dropdown-menu">
+        <li *ngFor="let dd of attr?.dropDownData"><span class="dropdown-item pointer"
+                [attr.data-bs-toggle]="dd.modalId ? 'modal' : ''"
+                [attr.data-bs-target]="dd.modalId ? '#'+dd.modalId : ''"
+                [innerHTML]="( iconArr[dd['icon']] || '' )+ '&nbsp;&nbsp;' +  dd?.content"
+                (click)="eventTriggered($event, dd.parameter ? data[dd.parameter] : data, dd?.icon+('-'+ attr?.attrName || ''))"></span>
+        </li>
+    </ul>
+</ng-template>
+<!-- #endregion -->
+
+<!-- #region elementType = date -->
+<ng-template #date let-attr="attr" let-data="Data">
+    {{ (data[attr.attrName] | date : DATE_PIPE_FORMAT) || '-' }}
+</ng-template>
+<!-- #endregion -->
+
+<!-- #endregion elementType -->
